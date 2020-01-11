@@ -9,7 +9,7 @@ import scipy.io as sio
 import pdb
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set()
+from copy import deepcopy
 
 class Node():
     '''Simple Node class. Each instance contains a list of children and parents.'''
@@ -33,13 +33,6 @@ class Node():
             return False
     def children(self,C_list=[],P_list=[]):
         return [Node(n,C_list,P_list) for n in self.C_name_list]
-    
-    
-class PlotNode(Node):
-    '''Extends the Node class for plotting'''
-    def __init__(self,name,htree,data=[]):
-        super().__init__(name,htree)
-        return
 
 def get_valid_classifications(current_node_list,C_list,P_list,valid_classes):
     '''Recursively generates all possible classifications that are valid, 
@@ -97,17 +90,29 @@ class HTree():
             setattr(self, key, htree_df[key].values)
         return
 
-    def plot(self,figsize=(15,10),fontsize=10):
-        fig = plt.figure(figsize=figsize)
+    def plot(self,figsize=(15,10),fontsize=10,skeletononly=False,skeletoncol='#BBBBBB',skeletonalpha=1.0,ls='-',txtleafonly=False,fig=None):
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
 
         #Labels are shown only for children nodes
-        for i, label in enumerate(self.child):
-            plt.text(self.x[i], self.y[i], label, 
-                    color=self.col[i],
-                    horizontalalignment='center',
-                    verticalalignment='top', 
-                    rotation=90, 
-                    fontsize=fontsize)
+        if skeletononly==False:
+            if txtleafonly==False:
+                for i, label in enumerate(self.child):
+                        plt.text(self.x[i], self.y[i], label, 
+                                color=self.col[i],
+                                horizontalalignment='center',
+                                verticalalignment='top', 
+                                rotation=90, 
+                                fontsize=fontsize)
+            else:
+                for i in np.flatnonzero(self.isleaf):
+                    label = self.child[i]
+                    plt.text(self.x[i], self.y[i], label, 
+                            color=self.col[i],
+                            horizontalalignment='center',
+                            verticalalignment='top', 
+                            rotation=90, 
+                            fontsize=fontsize)
 
         for parent in np.unique(self.parent):
             #Get position of the parent node:
@@ -124,19 +129,24 @@ class HTree():
             for c_ind in all_c_inds:
                 xc = self.x[c_ind]
                 yc = self.y[c_ind]
-                plt.plot([xc, xc], [yc, yp], color='#BBBBBB')
-                plt.plot([xc, xp], [yp, yp], color='#BBBBBB')
-                
-        ax = plt.gca()
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_xlim([np.min(self.x) - 1, np.max(self.x) + 1])
-        ax.set_ylim([np.min(self.y), 1.2*np.max(self.y)])
-        plt.tight_layout()
-        fig.subplots_adjust(bottom=0.2)
+                plt.plot([xc, xc], [yc, yp], color=skeletoncol,alpha=skeletonalpha,ls=ls,)
+                plt.plot([xc, xp], [yp, yp], color=skeletoncol,alpha=skeletonalpha,ls=ls)
+        if skeletononly==False:
+            ax = plt.gca()
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_xlim([np.min(self.x) - 1, np.max(self.x) + 1])
+            ax.set_ylim([np.min(self.y), 1.2*np.max(self.y)])
+            plt.tight_layout()
+            fig.subplots_adjust(bottom=0.2)
+        return
+    
+    def plotnodes(self,nodelist,fig=None):
+        ind = np.isin(self.child,nodelist)
+        plt.plot(self.x[ind], self.y[ind],'s',color='r')
         return
 
-    def get_descendants(self,node,leafonly=False):
+    def get_descendants(self,node:str,leafonly=False):
         '''Return a list consisting of all descendents for a given node. Given node is excluded.\n
         'node' is of type str \n
         `leafonly=True` returns only leaf node descendants'''
@@ -152,6 +162,14 @@ class HTree():
         if leafonly:
             descendants = list(set(descendants) & set(self.child[self.isleaf]))
         return descendants
+
+    def get_all_descendants(self,leafonly=False):
+        '''Return a dict consisting of node names as keys and, corresp. descendant list as values.\n
+        `leafonly=True` returns only leaf node descendants'''
+        descendant_dict = {}
+        for key in np.unique(np.concatenate([self.child,self.parent])):
+            descendant_dict[key]=self.get_descendants(node=key,leafonly=leafonly)
+        return descendant_dict
 
     def get_ancestors(self,node,rootnode=None):
         '''Return a list consisting of all ancestors 
@@ -202,9 +220,22 @@ class HTree():
             print('Node not found in current tree')
         return HTree(htree_df=subtree_df)
 
-def do_merges(labels, list_changes=[], n_merges=0):
-    '''Perform n_merges on an array of labels using the list of changes at each merge.'''
 
+def do_merges(labels, list_changes=[], n_merges=0, verbose=False):
+    """Perform n_merges on an array of labels using the list of changes at each merge. 
+    If labels are leaf node labels, then the do_merges() gives successive horizontal cuts of the hierarchical tree.
+    
+    Arguments:
+        labels -- label array to update
+    
+    Keyword Arguments:
+        list_changes  -- output of Htree.get_mergeseq()
+        n_merges -- int, can be at most len(list_changes)
+    
+    Returns:
+        labels -- array of updated labels. Same size as input, non-unique entries are allowed.
+    """
+    assert isinstance(labels,np.ndarray), 'labels must be a numpy array'
     for i in range(n_merges):
         if i < len(list_changes):
             c_nodes_list = list_changes[i][0]
@@ -212,9 +243,39 @@ def do_merges(labels, list_changes=[], n_merges=0):
             for c_node in c_nodes_list:
                 n_samples = np.sum([labels == c_node])
                 labels[labels == c_node] = p_node
-                # print(n_samples,' in ',c_node, ' --> ' ,p_node)
+                if verbose:
+                    print(n_samples,' in ',c_node, ' --> ' ,p_node)
         else:
             print('Exiting after performing max allowed merges =',
                   len(list_changes))
             break
     return labels
+
+
+def simplify_tree(pruned_subtree,skip_nodes=None):
+    '''pruned subtree has nodes that have a single child node. In the returned simplified tree,
+    the parent is directly connected to the child, and such intermediate nodes are removed.'''
+    
+    simple_tree = deepcopy(pruned_subtree)
+    if skip_nodes is None:
+        X = pd.Series(pruned_subtree.parent).value_counts().to_frame()
+        skip_nodes = X.iloc[X[0].values==1].index.values.tolist()
+
+    for node in skip_nodes:
+        node_parent = np.unique(simple_tree.parent[simple_tree.child == node])
+        node_child = np.unique(simple_tree.child[simple_tree.parent == node])
+
+        #Ignore root node special case:
+        if node_parent.size != 0:
+            #print(simple_tree.obj2df().to_string())
+            print('Remove {} and link {} to {}'.format(node, node_parent, node_child))
+            simple_tree.parent[simple_tree.parent == node]=node_parent
+
+            #Remove rows containing this particular node as parent or child
+            simple_tree_df=simple_tree.obj2df()
+            simple_tree_df.drop(simple_tree_df[(simple_tree_df.child == node) | (simple_tree_df.parent == node)].index, inplace=True)
+
+            #Reinitialize tree from the dataframe
+            simple_tree=HTree(htree_df=simple_tree_df)
+        
+    return simple_tree,skip_nodes
