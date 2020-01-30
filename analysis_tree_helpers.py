@@ -227,8 +227,10 @@ class HTree():
         all_child = self.child[self.isleaf]
         all_child_x = self.x[self.isleaf]
         sortind = np.argsort(all_child_x)
+        new_x = 0
         for (this_child,this_x) in zip(all_child[sortind],all_child_x[sortind]):
-            self.x[self.child==this_child]=this_x
+            self.x[self.child==this_child]=new_x
+            new_x = new_x+1
             
             
         parents = self.child[~self.isleaf].tolist() 
