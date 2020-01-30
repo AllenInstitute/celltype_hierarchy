@@ -220,6 +220,21 @@ class HTree():
             print('Node not found in current tree')
         return HTree(htree_df=subtree_df)
 
+    def update_layout(self):
+        '''Update `x` positions of tree based on newly assigned leaf nodes.
+        '''
+        #Update x position for leaf nodes to evenly distribute them.
+        self.x[self.isleaf] = np.argsort(self.x[self.isleaf])
+        
+        #Update x positions of non-leaf nodes based on their descendant leaf nodes.
+        parents = self.child[~self.isleaf].tolist() 
+        for node in parents:
+            descendant_leaf_nodes = self.get_descendants(node=node,leafonly=True)
+            parent_ind = np.isin(self.child,[node])
+            descendant_leaf_ind = np.isin(self.child,descendant_leaf_nodes)
+            self.x[parent_ind] = np.mean(self.x[descendant_leaf_ind])
+        return 
+
 
 def do_merges(labels, list_changes=[], n_merges=0, verbose=False):
     """Perform n_merges on an array of labels using the list of changes at each merge. 
@@ -279,3 +294,5 @@ def simplify_tree(pruned_subtree,skip_nodes=None):
             simple_tree=HTree(htree_df=simple_tree_df)
         
     return simple_tree,skip_nodes
+
+
