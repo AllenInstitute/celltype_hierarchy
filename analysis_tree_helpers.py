@@ -224,9 +224,13 @@ class HTree():
         '''Update `x` positions of tree based on newly assigned leaf nodes.
         '''
         #Update x position for leaf nodes to evenly distribute them.
-        self.x[self.isleaf] = np.argsort(self.x[self.isleaf])
-        
-        #Update x positions of non-leaf nodes based on their descendant leaf nodes.
+        all_child = self.child[self.isleaf]
+        all_child_x = self.x[self.isleaf]
+        sortind = np.argsort(all_child_x)
+        for (this_child,this_x) in zip(all_child[sortind],all_child_x[sortind]):
+            self.x[self.child==this_child]=this_x
+            
+            
         parents = self.child[~self.isleaf].tolist() 
         for node in parents:
             descendant_leaf_nodes = self.get_descendants(node=node,leafonly=True)
