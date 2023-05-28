@@ -155,7 +155,7 @@ class HTree():
         if skeletononly == False:
             ax = plt.gca()
             ax.set_xticks([])
-            ax.set_yticks([])
+            #ax.set_yticks([])
             ax.set_xlim([np.min(self.x) - 1, np.max(self.x) + 1])
             ax.set_ylim([np.min(self.y), 1.2*np.max(self.y)])
             plt.tight_layout()
@@ -165,6 +165,63 @@ class HTree():
     def plotnodes(self, nodelist, fig=None):
         ind = np.isin(self.child, nodelist)
         plt.plot(self.x[ind], self.y[ind], 's', color='r')
+        return
+
+    def plot_RI(self, figsize=(15, 10), fontsize=10,
+             skeletononly=False, skeletoncol='#BBBBBB', skeletonalpha=1.0,
+             ls='-', txtleafonly=False, fig=None):
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+
+        #Labels are shown only for children nodes
+        if skeletononly == False:
+            if txtleafonly == False:
+                for i, label in enumerate(self.child):
+                    plt.text(self.x[i], self.y[i]+0.025, label,
+                             color=self.col[i],
+                             horizontalalignment='center',
+                             verticalalignment='bottom',
+                             rotation=90,
+                             fontsize=fontsize)
+            else:
+                for i in np.flatnonzero(self.isleaf):
+                    label = self.child[i]
+                    plt.text(self.x[i], self.y[i]+0.025, label,
+                             color=self.col[i],
+                             horizontalalignment='center',
+                             verticalalignment='bottom',
+                             rotation=90,
+                             fontsize=fontsize)
+
+        for parent in np.unique(self.parent):
+            #Get position of the parent node:
+            p_ind = np.flatnonzero(self.child == parent)
+
+            if p_ind.size == 0:  # Enters here for any root node
+                p_ind = np.flatnonzero(self.parent == parent)
+                xp = self.x[p_ind]
+                yp = -.1
+            else:
+                xp = self.x[p_ind]
+                yp = self.y[p_ind]
+
+            all_c_inds = np.flatnonzero(np.isin(self.parent, parent))
+            for c_ind in all_c_inds:
+
+                xc = self.x[c_ind]
+                yc = self.y[c_ind]
+                plt.plot([xc, xc], [yc, yp], color=skeletoncol,
+                         alpha=skeletonalpha, ls=ls,)
+                plt.plot([xc, xp], [yp, yp], color=skeletoncol,
+                         alpha=skeletonalpha, ls=ls)
+        if skeletononly == False:
+            ax = plt.gca()
+            ax.set_xticks([])
+            #ax.set_yticks([])
+            ax.set_xlim([np.min(self.x) - 1, np.max(self.x) + 1])
+            ax.set_ylim([np.min(self.y), 1.2*np.max(self.y)])
+            plt.tight_layout()
+            fig.subplots_adjust(bottom=0.2)
         return
 
     def get_descendants(self, node: str, leafonly=False):
