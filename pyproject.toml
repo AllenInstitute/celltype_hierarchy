@@ -1,0 +1,83 @@
+[project]
+name = "ctree"
+version = "2.0"
+description = "Celltype tree tools"
+readme = "README.md"
+license = {text = "MIT License"}
+authors = [
+    {name = "Rohan Gala", email = "rohang@alleninstitute.org"},
+    {name = "Yeganeh Marghi", email = "yeganeh@alleninstitute.org"},
+]
+
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "pandas",
+    "tqdm",
+    "rich",
+    "timebudget",
+    "jupyterlab",
+    "ipywidgets",
+    "toml",
+    "flatten_json"]
+
+[project.optional-dependencies]
+
+dev=[
+    "build",
+    "pre-commit",
+    "ruff"
+]
+
+[project.urls]
+Repository = "https://github.com/alleninstitute/celltype_hierarchy/"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["ctree"]
+
+[tool.ruff]
+line-length = 120
+include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
+
+
+[tool.ruff.lint]
+
+# See rules: https://beta.ruff.rs/docs/rules/
+select = [
+    "I",    # isort
+    "N",    # pep8-naming
+    "NPY",  # numpy
+    "RUF",  # ruff-specific rules
+]
+
+ignore = [
+    "N803",  # argument name should be lowercase; fine for matrices
+    "N806",  # variable name should be lowercase; fine for matrices
+    "NPY002", # allow calls to np.random; could cause slightly different results
+    "N812",
+    "N816", # allow mixed case variable names
+]
+
+preview = true
+
+[tool.ruff.format]
+preview = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["txtox"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]

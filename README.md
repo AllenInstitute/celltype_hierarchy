@@ -2,18 +2,17 @@
 
 This repository contains codes to interact with the hierarchical cell type taxonomy published by [Tasic et al. 2018](https://www.nature.com/articles/s41586-018-0654-5). 
 
-### Environment:
+### Installation:
 ```
-pip install numpy pandas matplotlib seaborn
-pip install flatten_json
+git clone https://github.com/AllenInstitute/celltype_hierarchy.git ctree
+cd ctree
+pip install -e .
 ```
 
 ### Usage:
- - See `examples.ipynb`
+
+See /notebooks folder for examples. 
 
 ### Contributors:
  - Rohan Gala
  - Yeganeh Marghi
-
-
-
