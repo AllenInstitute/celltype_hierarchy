@@ -4,7 +4,7 @@ This repository contains codes to interact with the hierarchical cell type taxon
 
 ### Installation:
 ```
-git clone https://github.com/AllenInstitute/celltype_hierarchy.git ctree
+git clone https://github.com/AllenInstitute/ctree.git ctree
 cd ctree
 pip install -e .
 ```
